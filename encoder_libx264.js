@@ -34,7 +34,7 @@ class libx264 extends encoder {
 	}
 	
 	available() {
-		console.time("Checking...");
+		if (global.debug) console.time("Checking...");
 		let res = this.ffmpeg.ffmpegSync([
 			"-hide_banner", "-v", "error",
 			"-f", "lavfi",
@@ -43,7 +43,7 @@ class libx264 extends encoder {
 			"-f", "null",
 			"-"
 		]);
-		console.timeEnd("Checking...");
+		if (global.debug) console.timeEnd("Checking...");
 		if (res.status != 0) {
 			return false;
 		}
@@ -63,7 +63,7 @@ class libx264 extends encoder {
 			return `${name};version=${version}`;
 		}
 
-		console.time("Generating...");
+		if (global.debug) console.time("Generating...");
 		this.indexes = {};
 		this.combinations = [];
 		for (let preset of this.settings.presets) {
@@ -99,8 +99,8 @@ class libx264 extends encoder {
 			JSON.stringify(this.indexes, null, null),
 			{encoding: "utf8"}
 		);
-		console.timeEnd("Generating...");
-		console.log(`Combinations: ${this.count()}`)
+		if (global.debug) console.timeEnd("Generating...");
+		if (global.debug) console.log(`Combinations: ${this.count()}`)
 	}
 
 	pool() {

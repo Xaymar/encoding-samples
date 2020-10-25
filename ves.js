@@ -121,7 +121,7 @@ async function load_videos(config, ff) { // Load Videos
 
 				data.name = name;
 				data.info = json;
-				data.caches = new Map();
+				data.caches = {};
 
 				// File Information
 				data.file_name = `${name}.mkv`;
@@ -285,96 +285,98 @@ async function transcode(config, ff, videos, encoders) {
 	// Build queues per cache.
 	console.group("Queueing...")
 	console.time("Subtotal");
+	let promises = [];
 	for (let video_key of videos.keys()) {
-		console.group(video_key);
-		console.time(video_key);
-		let video = videos.get(video_key);
-		for (let cache_key of video.caches.keys()) {
-			let cache = video.caches.get(cache_key);
-			console.time(cache_key);
+		promises.push(new Promise(async (resolve, reject) => {
+			let video = videos.get(video_key);
+			let video_promises = [];
 
-			for (let encoder_key of encoders.keys()) {
-				let encoder = encoders.get(encoder_key);
+			console.time(video_key);
+			for (let cache_key of video.caches.keys()) {
+				video_promises.push(new Promise(async (resolve1) => {
+					let cache = video.caches.get(cache_key);
 
-				let queue_promises = [];
-				let queue_commands = new poolqueue();
-				let queue_files = new poolqueue();
-				for (let idx = 0; idx < encoder.count(); idx++) {
-					let command_promises = [];
-					let command = encoder.get(idx, cache.width, cache.height, cache.framerate);
-					for (let bitrate of config.options.bitrates) {
-						for (let kfinterval of config.options.keyframeinterval) {
-							command_promises.push(new Promise((resolve, reject) => {
-								let file = path.join(
-									config.paths.output,
-									video.name,
-									cache_key,
-									encoder_key,
-									bitrate.toFixed(0),
-									(cache.framerate * kfinterval).toFixed(0),
-									`${command.hash}.mkv`
-								);
-								let file_json = path.join(
-									config.paths.output,
-									video.name,
-									cache_key,
-									encoder_key,
-									bitrate.toFixed(0),
-									(cache.framerate * kfinterval).toFixed(0),
-									`${command.hash}.json`
-								);
+					let queue_commands = new poolqueue();
+					let queue_files = new poolqueue();
+					let queue_promises = new Array();
 
-								// Check if this file already exists at the target location.
-								if (fs.existsSync(file_json)) {
-									// Don't need to check for a video here, since we only care about results.
-									if (global.debug) console.debug(`${file} already completed.`);
-									resolve();
-									return;
+					for (let encoder_key of encoders.keys()) {
+						let encoder = encoders.get(encoder_key);
+						let encoder_pool = encoder.pool();
+						let encoder_extra = encoder.extra();
+						for (let idx = 0; idx < encoder.count(); idx++) {
+							let command = encoder.get(idx, cache.width, cache.height, cache.framerate);
+							for (let bitrate of config.options.bitrates) {
+								for (let kfinterval of config.options.keyframeinterval) {
+									queue_promises.push(new Promise((resolve2) => {
+										let file = path.join(
+											config.paths.output,
+											video.name,
+											cache_key,
+											encoder_key,
+											bitrate.toFixed(0),
+											(cache.framerate * kfinterval).toFixed(0),
+											`${command.hash}.mkv`
+										);
+										let file_json = path.join(
+											config.paths.output,
+											video.name,
+											cache_key,
+											encoder_key,
+											bitrate.toFixed(0),
+											(cache.framerate * kfinterval).toFixed(0),
+											`${command.hash}.json`
+										);
+
+										// Check if this file already exists at the target location.
+										if (fs.existsSync(file_json)) {
+											// Don't need to check for a video here, since we only care about results.
+											if (global.debug) console.debug(`${file} already completed.`);
+
+											resolve2(false);
+											return;
+										}
+
+										let line = [
+											"-map", "0:v:0",
+											"-an",
+											"-c:v", encoder_key,
+											"-g", (cache.framerate * kfinterval).toFixed(0),
+											"-b:v", `${bitrate}k`,
+											"-minrate", "0",
+											"-maxrate", "0",
+											"-bufsize", `${2 * bitrate}k`,
+										].concat(command.options).concat(encoder_extra).concat([file]);
+
+										queue_commands.push(encoder_pool, line, command.cost);
+										queue_files.push(encoder_pool, [file, file_json], command.cost);
+
+										resolve2(true);
+									}));
 								}
-
-								let line = [
-									"-map", "0:v:0",
-									"-an",
-									"-c:v", encoder_key,
-									"-g", (cache.framerate * kfinterval).toFixed(0),
-									"-b:v", `${bitrate}k`,
-									"-minrate", "0",
-									"-maxrate", "0",
-									"-bufsize", `${2 * bitrate}k`,
-								].concat(command.options).concat(encoder.extra()).concat([file]);
-
-								queue_commands.push(
-									encoder.pool(),
-									line,
-									command.cost,
-								);
-								queue_files.push(
-									encoder.pool(),
-									[file, file_json],
-									command.cost,
-								);
-
-								resolve();
-							}));
+							}
 						}
 					}
-					queue_promises.push(async function () {
-						await Promise.allSettled(command_promises);
-					});
-				}
-				await Promise.allSettled(queue_promises);
 
-				cache.queues.set(encoder_key, {
-					commands: queue_commands.finalize(),
-					files: queue_files.finalize(),
-				});
+					await Promise.allSettled(queue_promises);
+
+					let data = {
+						commands: queue_commands.finalize(),
+						files: queue_files.finalize(),
+					};
+					cache.queues = data;
+
+					resolve1(true);
+				}));
 			}
 
-			console.timeEnd(cache_key);
-		}
-		console.timeEnd(video_key);
-		console.groupEnd();
+			await Promise.allSettled(video_promises);
+			console.timeEnd(video_key);
+
+			resolve();
+		}));
 	}
+	await Promise.allSettled(promises);
 	console.timeEnd("Subtotal");
 	console.groupEnd();
 
@@ -386,25 +388,25 @@ async function transcode(config, ff, videos, encoders) {
 	// 4. Delete encoded files.
 	// 5. Repeat until queues empty, no more caches for video, and no more videos.
 
-/*
-	console.group("Queueing...")
-	console.time("Subtotal");
-	for (let video_key of videos.keys()) {
-		console.group(video_key);
-		console.time(video_key);
-		let video = videos.get(video_key);
-		for (let cache_key of video.caches.keys()) {
-			let cache = video.caches.get(cache_key);
-			console.time(cache_key);
-
-			console.timeEnd(cache_key);
+	/*
+		console.group("Queueing...")
+		console.time("Subtotal");
+		for (let video_key of videos.keys()) {
+			console.group(video_key);
+			console.time(video_key);
+			let video = videos.get(video_key);
+			for (let cache_key of video.caches.keys()) {
+				let cache = video.caches.get(cache_key);
+				console.time(cache_key);
+	
+				console.timeEnd(cache_key);
+			}
+			console.timeEnd(video_key);
+			console.groupEnd();
 		}
-		console.timeEnd(video_key);
+		console.timeEnd("Subtotal");
 		console.groupEnd();
-	}
-	console.timeEnd("Subtotal");
-	console.groupEnd();
-*/
+	*/
 	/*
 	for (let video_name in videos) {
 		console.time(video_name);

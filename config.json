@@ -1,0 +1,214 @@
+{
+	"paths": {
+		"ffmpeg": "./ffmpeg/",
+		"videos": "./videos/",
+		"cache": "./cache/",
+		"output": "./output/"
+	},
+	"encoders": {
+		"libx264": {
+			"enabled": true,
+			"pool": "cpu",
+			"cost_scale": 100.0,
+			"threads": 8,
+			"presets": [
+				"veryfast",
+				"faster",
+				"fast",
+				"medium",
+				"slow",
+				"slower",
+				"veryslow"
+			],
+			"tunes": [
+				null,
+				"film",
+				"grain",
+				"animation"
+			]
+		},
+		"h264_nvenc": {
+			"enabled": true,
+			"pool": "nvenc",
+			"parallel": 2,
+			"presets": [
+				"p5",
+				"p6",
+				"p7"
+			],
+			"tunes": [
+				"hq"
+			],
+			"rc-lookahead": [
+				0,
+				16,
+				32
+			],
+			"bf": [
+				0,
+				1,
+				2,
+				3,
+				4
+			]
+		},
+		"hevc_nvenc": {
+			"enabled": false,
+			"pool": "nvenc",
+			"parallel": 3
+		},
+		"h264_amf": {
+			"enabled": false,
+			"pool": "amf",
+			"parallel": 3
+		},
+		"hevc_amf": {
+			"enabled": false,
+			"pool": "amf",
+			"parallel": 3
+		},
+		"h264_qsv": {
+			"enabled": false,
+			"pool": "qsv",
+			"parallel": 3
+		},
+		"hevc_qsv": {
+			"enabled": false,
+			"pool": "qsv",
+			"parallel": 3
+		},
+		"vp9_qsv": {
+			"enabled": false,
+			"pool": "qsv",
+			"parallel": 3
+		},
+		"libvpx-vp9": {
+			"enabled": false,
+			"pool": "cpu"
+		},
+		"libaom-av1": {
+			"enabled": false,
+			"pool": "cpu"
+		}
+	},
+	"videos": {
+		"arma_3-001": {
+			"enabled": false
+		},
+		"arma_3-002": {
+			"enabled": true
+		},
+		"black_mesa-001": {
+			"enabled": false
+		},
+		"black_mesa-002": {
+			"enabled": false
+		},
+		"black_mesa-003": {
+			"enabled": false
+		},
+		"dota_2-001": {
+			"enabled": false
+		},
+		"grip-001": {
+			"enabled": false
+		},
+		"grip-002": {
+			"enabled": false
+		},
+		"grip-003": {
+			"enabled": false
+		},
+		"beat_hazard-001": {
+			"enabled": false
+		},
+		"beat_hazard-002": {
+			"enabled": false
+		},
+		"celeste-001": {
+			"enabled": false
+		},
+		"celeste-002": {
+			"enabled": false
+		},
+		"celeste-003": {
+			"enabled": false
+		},
+		"final_fantasy_xiv-001": {
+			"enabled": false
+		},
+		"final_fantasy_xiv-002": {
+			"enabled": false
+		},
+		"final_fantasy_xiv-003": {
+			"enabled": false
+		},
+		"final_fantasy_xiv-004": {
+			"enabled": true
+		},
+		"forza_4_horizon-001": {
+			"enabled": false
+		},
+		"forza_4_horizon-002": {
+			"enabled": false
+		},
+		"noita-001": {
+			"enabled": false
+		},
+		"noita-002": {
+			"enabled": false
+		},
+		"risk_of_rain_2-001": {
+			"enabled": false
+		},
+		"satisfactory-001": {
+			"enabled": false
+		},
+		"space_engineers-001": {
+			"enabled": false
+		},
+		"space_engineers-002": {
+			"enabled": false
+		},
+		"space_engineers-003": {
+			"enabled": false
+		}
+	},
+	"options": {
+		"resolutions": [
+			[
+				1280,
+				720
+			],
+			[
+				1536,
+				864
+			],
+			[
+				1920,
+				1080
+			],
+			[
+				2560,
+				1440
+			],
+			[
+				3840,
+				2160
+			]
+		],
+		"framerate_scalings": [
+			1.0,
+			0.5
+		],
+		"bitrates": [
+			3500,
+			6000,
+			8000
+		],
+		"keyframeinterval": [
+			1.0,
+			2.0
+		]
+	}
+}

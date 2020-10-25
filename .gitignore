@@ -1,0 +1,10 @@
+# FFmpeg Binaries - see README.md!
+ffmpeg/*
+
+# Video Inputs - see README.md!
+videos/*
+
+# Generated Files
+output/*
+cache/*
+desktop.ini

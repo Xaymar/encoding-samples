@@ -31,6 +31,7 @@
 			"enabled": true,
 			"pool": "nvenc",
 			"parallel": 2,
+			"gpu": -1,
 			"presets": [
 				"p5",
 				"p6",
@@ -55,32 +56,38 @@
 		"hevc_nvenc": {
 			"enabled": false,
 			"pool": "nvenc",
-			"parallel": 3
+			"parallel": 2,
+			"gpu": -1
 		},
 		"h264_amf": {
 			"enabled": false,
 			"pool": "amf",
-			"parallel": 3
+			"parallel": 2,
+			"gpu": -1
 		},
 		"hevc_amf": {
 			"enabled": false,
 			"pool": "amf",
-			"parallel": 3
+			"parallel": 2,
+			"gpu": -1
 		},
 		"h264_qsv": {
 			"enabled": false,
 			"pool": "qsv",
-			"parallel": 3
+			"parallel": 2,
+			"gpu": -1
 		},
 		"hevc_qsv": {
 			"enabled": false,
 			"pool": "qsv",
-			"parallel": 3
+			"parallel": 2,
+			"gpu": -1
 		},
 		"vp9_qsv": {
 			"enabled": false,
 			"pool": "qsv",
-			"parallel": 3
+			"parallel": 2,
+			"gpu": -1
 		},
 		"libvpx-vp9": {
 			"enabled": false,

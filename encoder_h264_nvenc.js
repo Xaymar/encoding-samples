@@ -139,15 +139,9 @@ class h264_nvenc extends encoder {
 		return this.combinations[index];
 	}
 
-/*
-for (let br of _config.bitrates)
-	"-b:v", `${br.toFixed(0)}k`,
-	"-bufsize", `${(br * 2).toFixed(0)}k`,
-	"-minrate", "0",
-	"-maxrate", `${br.toFixed(0)}k`,
-for (let kfm of _config.keyframe_multiplier)
-	"-g", (_cache.fps * kfm).toFixed(0),
-*/
+	extra() {
+		return ["-gpu", settings.gpu];
+	}
 }
 
 module.exports = h264_nvenc;

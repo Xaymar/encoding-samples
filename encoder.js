@@ -35,6 +35,10 @@ class encoder {
 	get(index, width, height, framerate) {
 		throw new Error("Not Implemented");
 	}
+
+	extra() {
+		return [];
+	}
 }
 
 module.exports = encoder;

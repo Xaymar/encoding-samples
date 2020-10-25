@@ -29,7 +29,7 @@ function float_lt(a, b, edge) { return ((a + edge) < b); }
 function float_le(a, b, edge) { return float_lt(a, b, edge) || float_eq(a, b, edge); }
 function float_gt(a, b, edge) { return ((a - edge) > b); }
 function float_ge(a, b, edge) { return float_gt(a, b, edge) || float_eq(a, b, edge); }
-Object.size = function(obj) { var size = 0, key; for (key in obj) { if (obj.hasOwnProperty(key)) { size++; } } return size; };
+Object.size = function (obj) { var size = 0, key; for (key in obj) { if (obj.hasOwnProperty(key)) { size++; } } return size; };
 
 // Actual Code
 async function load_config() { // Load Configuration
@@ -103,7 +103,7 @@ async function load_videos(config, ff) { // Load Videos
 			if (global.debug) console.debug(`${name} is disabled or invalid.`);
 			continue;
 		}
-		
+
 		// Does the video exist?
 		if (!fs.existsSync(path.join(config.paths.videos, `${name}.mkv`))) {
 			console.error(`${name} does not exist.`);
@@ -119,27 +119,27 @@ async function load_videos(config, ff) { // Load Videos
 			probeprom.then((json) => {
 				let data = new Object();
 
-				data.name	= name;
-				data.info	= json;
-				data.caches	= new Map();
+				data.name = name;
+				data.info = json;
+				data.caches = new Map();
 
 				// File Information
-				data.file_name	= `${name}.mkv`;
-				data.file_ext	= path.extname(data.file_name);
-				data.file_base	= path.basename(data.file_name, data.file_ext);
-				data.file		= path.join(config.paths.videos, data.file_name);
+				data.file_name = `${name}.mkv`;
+				data.file_ext = path.extname(data.file_name);
+				data.file_base = path.basename(data.file_name, data.file_ext);
+				data.file = path.join(config.paths.videos, data.file_name);
 
 				// Video Information
-				data.resolution	= { width: data.info.streams[0].width, height: data.info.streams[0].height };
-				data.framerate	= eval(data.info.streams[0].r_frame_rate);
-				data.duration	= data.info.streams[0].duration;
-				
+				data.resolution = { width: data.info.streams[0].width, height: data.info.streams[0].height };
+				data.framerate = eval(data.info.streams[0].r_frame_rate);
+				data.duration = data.info.streams[0].duration;
+
 				// Color Information
 				data.color = {};
-				data.color.range		= data.info.streams[0].color_range ? data.info.streams[0].color_range : 'tv';
-				data.color.trc			= data.info.streams[0].color_transfer ? data.info.streams[0].color_transfer : 'bt709';
-				data.color.primaries	= data.info.streams[0].color_primaries ? data.info.streams[0].color_primaries : 'bt709';
-				data.color.matrix		= data.info.streams[0].color_space ? data.info.streams[0].color_space : 'bt709';
+				data.color.range = data.info.streams[0].color_range ? data.info.streams[0].color_range : 'tv';
+				data.color.trc = data.info.streams[0].color_transfer ? data.info.streams[0].color_transfer : 'bt709';
+				data.color.primaries = data.info.streams[0].color_primaries ? data.info.streams[0].color_primaries : 'bt709';
+				data.color.matrix = data.info.streams[0].color_space ? data.info.streams[0].color_space : 'bt709';
 
 				videos.set(data.name, data);
 				console.timeEnd(name);
@@ -202,11 +202,11 @@ async function create_caches(config, ff, videos, encoders) { // Create Caches
 			if (fs.existsSync(cache.file)) {
 				let info = ff.probeSync(cache.file);
 				if ((info.streams)
-				  && (info.streams.length > 0)
-				  && (info.streams[0].width == cache.width)
-				  && (info.streams[0].height == cache.height)
-				  && float_eq(eval(info.streams[0].r_frame_rate), cache.framerate, 0.01)
-				  && float_eq(info.streams[0].duration, video.duration, 0.1)) {
+					&& (info.streams.length > 0)
+					&& (info.streams[0].width == cache.width)
+					&& (info.streams[0].height == cache.height)
+					&& float_eq(eval(info.streams[0].r_frame_rate), cache.framerate, 0.01)
+					&& float_eq(info.streams[0].duration, video.duration, 0.1)) {
 					if (global.debug) console.debug(`${key} already exists.`);
 					continue;
 				}
@@ -224,7 +224,7 @@ async function create_caches(config, ff, videos, encoders) { // Create Caches
 			if (encoders.has("h264_nvenc")) {
 				command.push(
 					"-c:v", "h264_nvenc",
-					"-profile:v", "high", 
+					"-profile:v", "high",
 					"-preset", "p1",
 					"-tune", "lossless",
 					"-rc", "constqp",
@@ -244,7 +244,6 @@ async function create_caches(config, ff, videos, encoders) { // Create Caches
 			} else {
 				command.push(
 					"-c:v", "libx264",
-					"-profile:v", "high", 
 					"-preset", "veryfast",
 					"-crf", "0",
 					"-b:v", "0",
@@ -254,7 +253,7 @@ async function create_caches(config, ff, videos, encoders) { // Create Caches
 					"-g", `15`,
 				);
 			}
-			command.push(cache.file);	
+			command.push(cache.file);
 			let res = ff.ffmpegSync(command);
 			if (res.status != 0) {
 				console.log(res.stderr.toString());
@@ -302,7 +301,7 @@ async function transcode(config, ff, videos, encoders) {
 				let queue_files = new poolqueue();
 				for (let idx = 0; idx < encoder.count(); idx++) {
 					let command_promises = [];
-					let command = encoder.get(idx, cache.width, cache.height, cache.framerate);					
+					let command = encoder.get(idx, cache.width, cache.height, cache.framerate);
 					for (let bitrate of config.options.bitrates) {
 						for (let kfinterval of config.options.keyframeinterval) {
 							command_promises.push(new Promise((resolve, reject) => {
@@ -342,7 +341,7 @@ async function transcode(config, ff, videos, encoders) {
 									"-minrate", "0",
 									"-maxrate", "0",
 									"-bufsize", `${2 * bitrate}k`,
-								].concat(command.options).concat([file]);
+								].concat(command.options).concat(encoder.extra()).concat([file]);
 
 								queue_commands.push(
 									encoder.pool(),
@@ -359,7 +358,7 @@ async function transcode(config, ff, videos, encoders) {
 							}));
 						}
 					}
-					queue_promises.push(async function() {
+					queue_promises.push(async function () {
 						await Promise.allSettled(command_promises);
 					});
 				}
@@ -379,8 +378,33 @@ async function transcode(config, ff, videos, encoders) {
 	console.timeEnd("Subtotal");
 	console.groupEnd();
 
+	// Process from here on out.
+	// LOOP
+	// 1. Pull out front of the command and file queue.
+	// 2. Encode using the given command(s).
+	// 3. Compare resulting files with real input (libvmaf).
+	// 4. Delete encoded files.
+	// 5. Repeat until queues empty, no more caches for video, and no more videos.
 
+/*
+	console.group("Queueing...")
+	console.time("Subtotal");
+	for (let video_key of videos.keys()) {
+		console.group(video_key);
+		console.time(video_key);
+		let video = videos.get(video_key);
+		for (let cache_key of video.caches.keys()) {
+			let cache = video.caches.get(cache_key);
+			console.time(cache_key);
 
+			console.timeEnd(cache_key);
+		}
+		console.timeEnd(video_key);
+		console.groupEnd();
+	}
+	console.timeEnd("Subtotal");
+	console.groupEnd();
+*/
 	/*
 	for (let video_name in videos) {
 		console.time(video_name);

@@ -6,13 +6,6 @@ global.debug = false;
 // --------------------------------------------------------------------------------
 // Actual Code
 
-/*
-Comparing VMAF instantly:
-- Saves disk space - no need to keep copies around!
-fn: .\ffmpeg.exe -i "..\..\cache\arma_3-002-1280x720x60.00.mkv" -i "..\..\videos\arma_3-002.mkv" -filter_complex_threads 8 -filter_complex [0:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=1920:h=1080,colorspace=all=bt709:range=pc,format=pix_fmts=yuv444p[main];[1:v:0]colorspace=all=bt709:range=pc,format=pix_fmts=yuv444p[ref];[main][ref]libvmaf=model_path=../vmaf/vmaf_4k_rb_v0.6.2.pkl:log_fmt=json:log_path=here2.json:enable_conf_interval=1:shortest=1[out] -map [out] -f null -
-
-*/
-
 // Import modules
 const ffmpeg = require('./ffmpeg.js');
 const poolqueue = require('./poolqueue.js');
@@ -271,20 +264,10 @@ async function create_caches(config, ff, videos, encoders) { // Create Caches
 	return videos;
 }
 
-async function transcode(config, ff, videos, encoders) {
-	console.group("Transcoding...");
+async function queue(config, ff, videos, encoders) {
+	console.group("Queueing...");
 	console.time("Total");
 
-	/* Needs a massive overhaul:
-	- Check if the .json file for a configuration already exists, if not continue.
-	- Do not store transcodes for longer than needed, we only need to compare against source.
-	- Use poolqueue to still allow for parallelization. 
-	- '-g' and bitrate options are controlled _from here_.
-	*/
-
-	// Build queues per cache.
-	console.group("Queueing...")
-	console.time("Subtotal");
 	let promises = [];
 	for (let video_key of videos.keys()) {
 		promises.push(new Promise(async (resolve, reject) => {
@@ -349,7 +332,7 @@ async function transcode(config, ff, videos, encoders) {
 										].concat(command.options).concat(encoder_extra).concat([file]);
 
 										queue_commands.push(encoder_pool, line, command.cost);
-										queue_files.push(encoder_pool, [file, file_json], command.cost);
+										queue_files.push(encoder_pool, [[file, file_json]], command.cost);
 
 										resolve2(true);
 									}));
@@ -377,9 +360,11 @@ async function transcode(config, ff, videos, encoders) {
 		}));
 	}
 	await Promise.allSettled(promises);
-	console.timeEnd("Subtotal");
+	console.timeEnd("Total");
 	console.groupEnd();
+}
 
+async function work(config, ff, videos, encoders) {
 	// Process from here on out.
 	// LOOP
 	// 1. Pull out front of the command and file queue.
@@ -388,53 +373,122 @@ async function transcode(config, ff, videos, encoders) {
 	// 4. Delete encoded files.
 	// 5. Repeat until queues empty, no more caches for video, and no more videos.
 
-	/*
-		console.group("Queueing...")
-		console.time("Subtotal");
-		for (let video_key of videos.keys()) {
-			console.group(video_key);
-			console.time(video_key);
-			let video = videos.get(video_key);
-			for (let cache_key of video.caches.keys()) {
-				let cache = video.caches.get(cache_key);
-				console.time(cache_key);
-	
-				console.timeEnd(cache_key);
-			}
-			console.timeEnd(video_key);
-			console.groupEnd();
-		}
-		console.timeEnd("Subtotal");
-		console.groupEnd();
-	*/
-	/*
-	for (let video_name in videos) {
-		console.time(video_name);
-		console.group(video_name);
-		let video = videos[video_name];
-		for (let cache of video.caches) {
-			let key_cache = `${cache.x}x${cache.y}x${cache.fps.toFixed(2)}`;
-			console.time(key_cache);
-			console.group(key_cache);
-			for (let cmd of cache.commands) {
-				let opts = [
-					"-y",
-					"-hide_banner",
-					"-v", "error",
-					"-hwaccel", "auto",
-					"-i", cache.file
-				].concat(cmd);
-				let res = ff.ffmpegSync(opts);
-				console.log(res.stdout.toString(), res.stderr.toString());
-			}
-			console.groupEnd();
-			console.timeEnd(key_cache);
-		}
-		console.groupEnd();
-		console.timeEnd(video_name);
-	}
-	*/
+	let vmaf_model = ff.consolify(path.resolve(path.join(config.paths.ffmpeg, "vmaf", config.options.vmaf.model)));
 
+	console.group("Processing...")
+	console.time("Total");
+	for (let video_key of videos.keys()) {
+		console.group(video_key);
+		console.time(video_key);
+		let video = videos.get(video_key);
+		for (let cache_key of video.caches.keys()) {
+			console.time(cache_key);
+			let cache = video.caches.get(cache_key);
+
+			let length = cache.queues.commands.length;
+			console.log(`0.0% (0 / ${length}): 0.000s`);
+			while (cache.queues.commands.length > 0) {
+				let commands = cache.queues.commands.shift();
+				let files = cache.queues.files.shift();
+
+				let prc1 = length - cache.queues.commands.length;
+				let prc2 = prc1 / length * 100.0;
+				let LABEL = `${prc2.toFixed(1)}% (${prc1} / ${length})`
+				console.time(LABEL)
+				console.group();
+
+				// Create directories.
+				for (let file of files) {
+					fs.mkdirSync(path.dirname(file[0]), { recursive: true });
+				}
+
+				// Encode
+				{
+					console.time("Encoding");
+					let opts = [
+						"-y",
+						"-hide_banner",
+						"-v", "error",
+						"-hwaccel", "auto",
+						"-i", cache.file
+					].concat(commands);
+					let res = ff.ffmpegSync(opts);
+					if (res.status != 0) {
+						console.log(res.stdout.toString(), res.stderr.toString());
+						continue;
+					}
+					console.timeEnd("Encoding");
+				}
+
+				/*
+				Comparing VMAF instantly:
+				- Saves disk space - no need to keep copies around!
+				fn: .\ffmpeg.exe -i "..\..\cache\arma_3-002-1280x720x60.00.mkv" -i "..\..\videos\arma_3-002.mkv" -filter_complex_threads 8 -filter_complex [0:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=1920:h=1080,colorspace=all=bt709:range=pc,format=pix_fmts=yuv444p[main];[1:v:0]colorspace=all=bt709:range=pc,format=pix_fmts=yuv444p[ref];[main][ref]libvmaf=model_path=../vmaf/vmaf_4k_rb_v0.6.2.pkl:log_fmt=json:log_path=here2.json:enable_conf_interval=1:shortest=1[out] -map [out] -f null -
+				
+				*/
+
+				// Process
+				{
+					console.time("Processing");
+					let opts = [
+						"-hide_banner",
+						"-v", "warning",
+						"-hwaccel", "auto",
+						"-i", video.file,
+					];
+					let filter = "";
+					let references = [];
+
+					// Build Filter Graph
+					if (files.length > 1) {
+						filter = `[0:v:0]split=${files.length}`
+						for (let idx = 0; idx < files.length; idx++) {
+							filter = `${filter}[ref:${idx}]`;
+							references[idx] = `[ref:${idx}]`;
+						}
+						filter = `${filter}`
+					} else {
+						references[0] = "[0:v:0]";
+					}
+
+					// Rescale and Resample all inputs and compare them.
+					for (let idx = 0; idx < files.length; idx++) {
+						let file = files[idx];						
+						opts.push("-i", file[0]);
+
+						if (filter != "")
+							filter = `${filter};` // [temp:${idx}];[temp:${idx}]
+						filter = `${filter}[${idx}:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${video.resolution.width.toFixed(0)}:h=${video.resolution.height.toFixed(0)},colorspace=space=${video.color.matrix}:trc=${video.color.trc}:primaries=${video.color.primaries}:range=${video.color.range},format=pix_fmts=yuv444p,fps=fps=${video.framerate.toFixed(2)},[ref:${idx}]libvmaf=model_path=${vmaf_model}:log_fmt=json:log_path=${ff.consolify(file[1])}:enable_conf_interval=1:n_threads=2[main:${idx}]`
+					}
+
+					opts.push("-filter_complex", filter);
+					for (let idx = 0; idx < files.length; idx++) {
+						opts.push(
+							"-map", `[main:${idx}]`,
+							"-f", "null",
+							"-"
+						)
+					}
+
+					console.log(opts);
+					let res = ff.ffmpegSync(opts);
+					if (res.status != 0) {
+						console.log(res.stdout.toString(), res.stderr.toString());
+						continue;
+					}
+					console.timeEnd("Processing");
+				}
+
+				console.log(filter);
+
+				console.groupEnd();
+				console.timeEnd(LABEL);
+			}
+			console.timeEnd(cache_key);
+		}
+		console.timeEnd(video_key);
+		console.groupEnd();
+	}
 	console.timeEnd("Total");
 	console.groupEnd();
 }
@@ -450,13 +504,8 @@ async function main() {
 	await load_encoders(config, ff).then((p) => { encoders = p; });
 	await load_videos(config, ff).then((p) => { videos = p; });
 	await create_caches(config, ff, videos, encoders);
-	await transcode(config, ff, videos, encoders);
-
-
-	// Queue
-	//await queue_transcodes(config, ff, videos, encoders);
-
-	// Transcode
+	await queue(config, ff, videos, encoders);
+	await work(config, ff, videos, encoders);
 }
 
 main();

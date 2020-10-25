@@ -1,6 +1,7 @@
 const path = require('path');
 const process = require('process');
 const child_process = require('child_process');
+const os = require('os');
 
 function parse_duration(str) {
 	// Duration is in the form HH:MM:SS.fraction
@@ -151,6 +152,20 @@ class ffmpeg {
 				reject([error, buf_stdout, buf_stderr]);
 			})
 		});
+	}
+
+	consolify(_file) {
+		//_file = path.resolve(_file);
+		if (os.platform() == 'win32') {
+			// Need to turn:
+			//   C:\myfiles\model.pkl
+			// into:
+			//   C\\:/myfiles/model.pkl
+			_file = _file.replace(/\\/g, '/').replace(':', '\\\\:');
+		} else {
+			// No further work needs to be done?
+		}
+		return _file;
 	}
 }
 

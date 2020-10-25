@@ -25,16 +25,17 @@
 				"film",
 				"grain",
 				"animation"
+			],
+			"scenecut": [
+				false
 			]
 		},
 		"h264_nvenc": {
 			"enabled": true,
 			"pool": "nvenc",
-			"parallel": 2,
+			"parallel": 3,
 			"gpu": -1,
 			"presets": [
-				"p5",
-				"p6",
 				"p7"
 			],
 			"tunes": [
@@ -45,18 +46,22 @@
 				16,
 				32
 			],
-			"bf": [
-				0,
-				1,
+			"bframes": [
 				2,
 				3,
 				4
+			],
+			"bframe_reference_mode": [
+				"middle"
+			],
+			"scenecut": [
+				false
 			]
 		},
 		"hevc_nvenc": {
 			"enabled": false,
 			"pool": "nvenc",
-			"parallel": 2,
+			"parallel": 3,
 			"gpu": -1
 		},
 		"h264_amf": {
@@ -182,6 +187,9 @@
 		}
 	},
 	"options": {
+		"vmaf": {
+			"model": "vmaf_4k_rb_v0.6.2.pkl"
+		},
 		"resolutions": [
 			[
 				1280,

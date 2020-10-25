@@ -63,12 +63,12 @@ class h264_nvenc extends encoder {
 		for (let preset of this.settings.presets) {
 			for (let tune of this.settings.tunes) {
 				for (let rcla of this.settings["rc-lookahead"]) {
-					for (let ia of [0, 1]) {
-						if ((rcla == 0) && (ia != 0)) { // Requires lookahead.
+					for (let scenecut of this.settings.scenecut) {
+						if ((rcla == 0) && (scenecut == true)) { // Requires lookahead.
 							continue;
 						}
-						for (let bf of this.settings.bf) {
-							for (let bfm of ["disabled", "middle"]) {
+						for (let bf of this.settings.bframes) {
+							for (let bfm of this.settings.bframe_reference_mode) {
 								if ((bf == 0) && (bfm != "disabled")) { // Requires B-Frames
 									continue;
 								}
@@ -82,7 +82,7 @@ class h264_nvenc extends encoder {
 												"-rc", "cbr",
 												"-cbr", 1,
 												"-rc-lookahead", rcla,
-												"-no-scenecut", 1 - ia,
+												"-no-scenecut", scenecut == true ? 0 : 1,
 												"-bf", bf,
 												"-b_ref_mode", bfm,
 												"-b_adapt", 1,
@@ -124,7 +124,7 @@ class h264_nvenc extends encoder {
 		
 		fs.writeFileSync(
 			path.join(this.config.paths.output, "h264_nvenc.json"),
-			JSON.stringify(this.indexes, null, null),
+			JSON.stringify(this.indexes, null, '\t'),
 			{encoding: "utf8"}
 		);
 		if (global.debug) console.timeEnd("Generating...");

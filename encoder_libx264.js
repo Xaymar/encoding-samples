@@ -68,35 +68,43 @@ class libx264 extends encoder {
 		this.combinations = [];
 		for (let preset of this.settings.presets) {
 			for (let tune of this.settings.tunes) {
-				let _opts = [
-					"-profile:v", "high",
-					"-preset", preset,
-					"-x264-params", `nal-hrd=cbr:force-cfr=1`,
-					"-ssim", "0",
-					"-threads", this.settings.threads,
-				];
-				if (tune) {
-					_opts.push("-tune", tune);
+				for (let scenecut of this.settings.scenecut) {
+					let _opts = [
+						"-profile:v", "high",
+						"-preset", preset,
+						"-x264-params", `nal-hrd=cbr:force-cfr=1`,
+						"-ssim", "0",
+						"-threads", this.settings.threads,						
+					];
+					if (tune) {
+						_opts.push("-tune", tune);
+					}
+					if (scenecut == false) {
+						_opts.push("-sc_threshold", 0);
+					} else if ((typeof scenecut) == "number") {
+						_opts.push("-sc_threshold", scenecut.toFixed(0));
+					}
+	
+					let _name = name(_opts);
+					let _hash = crypto.createHash("sha256").update(_name).digest("hex");
+					let _cost = 1.0 * this.settings.cost_scale * this.cost.preset[preset] * this.cost.tune[tune] * this.cost.threads;
+					let combo = {
+						name: _name,
+						hash: _hash,
+						options: _opts,
+						cost: _cost,
+					};
+	
+					this.indexes[_hash] = combo.options;
+					this.combinations.push(combo);
+
 				}
-
-				let _name = name(_opts);
-				let _hash = crypto.createHash("sha256").update(_name).digest("hex");
-				let _cost = 1.0 * this.settings.cost_scale * this.cost.preset[preset] * this.cost.tune[tune] * this.cost.threads;
-				let combo = {
-					name: _name,
-					hash: _hash,
-					options: _opts,
-					cost: _cost,
-				};
-
-				this.indexes[_hash] = combo.options;
-				this.combinations.push(combo);
 			}
 		}
 		
 		fs.writeFileSync(
 			path.join(this.config.paths.output, "libx264.json"),
-			JSON.stringify(this.indexes, null, null),
+			JSON.stringify(this.indexes, null, '\t'),
 			{encoding: "utf8"}
 		);
 		if (global.debug) console.timeEnd("Generating...");

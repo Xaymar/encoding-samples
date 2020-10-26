@@ -211,7 +211,7 @@ async function create_caches(config, ff, videos, encoders) { // Create Caches
 				"-hide_banner",
 				"-v", "error",
 				"-i", video.file,
-				"-filter_complex", `fps=fps=${cache.framerate_s},scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${cache.width}:h=${cache.height},colorspace=all=bt709:range=tv:format=yuv420p`,
+				"-filter_complex", `fps=fps=${cache.framerate_s},scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${cache.width}:h=${cache.height},colorspace=space=${config.options.transcode.color.matrix}:trc=${config.options.transcode.color.trc}:primaries=${config.options.transcode.color.primaries}:range=${config.options.transcode.color.range},format=pix_fmts=${config.options.transcode.format}`,
 				"-an",
 			];
 			if (encoders.has("h264_nvenc")) {
@@ -397,13 +397,13 @@ async function work(config, ff, videos, encoders) {
 				console.time(LABEL)
 				console.group();
 
-				// Create directories.
-				for (let file of files) {
+				
+				for (let file of files) { // Create directories.
 					fs.mkdirSync(path.dirname(file[0]), { recursive: true });
 				}
 
-				// Encode
-				{
+				
+				{ // Encode
 					console.time("Encoding");
 					let opts = [
 						"-y",
@@ -420,15 +420,7 @@ async function work(config, ff, videos, encoders) {
 					console.timeEnd("Encoding");
 				}
 
-				/*
-				Comparing VMAF instantly:
-				- Saves disk space - no need to keep copies around!
-				fn: .\ffmpeg.exe -i "..\..\cache\arma_3-002-1280x720x60.00.mkv" -i "..\..\videos\arma_3-002.mkv" -filter_complex_threads 8 -filter_complex [0:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=1920:h=1080,colorspace=all=bt709:range=pc,format=pix_fmts=yuv444p[main];[1:v:0]colorspace=all=bt709:range=pc,format=pix_fmts=yuv444p[ref];[main][ref]libvmaf=model_path=../vmaf/vmaf_4k_rb_v0.6.2.pkl:log_fmt=json:log_path=here2.json:enable_conf_interval=1:shortest=1[out] -map [out] -f null -
-				
-				*/
-
-				// Process
-				{
+				{ // Process
 					console.time("Processing");
 					let opts = [
 						"-hide_banner",
@@ -458,7 +450,7 @@ async function work(config, ff, videos, encoders) {
 
 						if (filter != "")
 							filter = `${filter};` // [temp:${idx}];[temp:${idx}]
-						filter = `${filter}[${idx}:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${video.resolution.width.toFixed(0)}:h=${video.resolution.height.toFixed(0)},colorspace=space=${video.color.matrix}:trc=${video.color.trc}:primaries=${video.color.primaries}:range=${video.color.range},format=pix_fmts=yuv444p,fps=fps=${video.framerate.toFixed(2)},[ref:${idx}]libvmaf=model_path=${vmaf_model}:log_fmt=json:log_path=${ff.consolify(file[1])}:enable_conf_interval=1:n_threads=2[main:${idx}]`
+						filter = `${filter}[${idx}:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${video.resolution.width.toFixed(0)}:h=${video.resolution.height.toFixed(0)},colorspace=ispace=${config.options.transcode.color.matrix}:itrc=${config.options.transcode.color.trc}:iprimaries=${config.options.transcode.color.primaries}:irange=${config.options.transcode.color.range}:space=${video.color.matrix}:trc=${video.color.trc}:primaries=${video.color.primaries}:range=${video.color.range},format=pix_fmts=yuv444p,fps=fps=${video.framerate.toFixed(2)},[ref:${idx}]libvmaf=model_path=${vmaf_model}:log_fmt=json:log_path=${ff.consolify(file[1])}:enable_conf_interval=1:psnr=1:ssim=1:n_threads=${config.options.vmaf.threads.toFixed(0)}[main:${idx}]`
 					}
 
 					opts.push("-filter_complex", filter);
@@ -470,7 +462,6 @@ async function work(config, ff, videos, encoders) {
 						)
 					}
 
-					console.log(opts);
 					let res = ff.ffmpegSync(opts);
 					if (res.status != 0) {
 						console.log(res.stdout.toString(), res.stderr.toString());
@@ -479,7 +470,9 @@ async function work(config, ff, videos, encoders) {
 					console.timeEnd("Processing");
 				}
 
-				console.log(filter);
+				for (let file of files) { // Clean up
+					fs.unlinkSync(file[0]);
+				}
 
 				console.groupEnd();
 				console.timeEnd(LABEL);

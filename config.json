@@ -23,7 +23,6 @@
 			"tunes": [
 				null,
 				"film",
-				"grain",
 				"animation"
 			],
 			"scenecut": [
@@ -36,6 +35,8 @@
 			"parallel": 3,
 			"gpu": -1,
 			"presets": [
+				"p5",
+				"p6",
 				"p7"
 			],
 			"tunes": [
@@ -46,10 +47,9 @@
 				16,
 				32
 			],
-			"bframes": [
+			"bframes": [				
 				2,
-				3,
-				4
+				3
 			],
 			"bframe_reference_mode": [
 				"middle"
@@ -156,7 +156,7 @@
 			"enabled": false
 		},
 		"final_fantasy_xiv-004": {
-			"enabled": true
+			"enabled": false
 		},
 		"forza_4_horizon-001": {
 			"enabled": false
@@ -187,29 +187,39 @@
 		}
 	},
 	"options": {
+		"transcode": {
+			"format": "yuv420p",
+			"color": {
+				"matrix": "bt709",
+				"trc": "bt709",
+				"primaries": "bt709",
+				"range": "tv"
+			}
+		},
 		"vmaf": {
-			"model": "vmaf_4k_rb_v0.6.2.pkl"
+			"model": "vmaf_4k_rb_v0.6.2.pkl",
+			"threads": 0
 		},
 		"resolutions": [
 			[
-				1280,
-				720
-			],
-			[
-				1536,
-				864
-			],
-			[
-				1920,
-				1080
+				3840,
+				2160
 			],
 			[
 				2560,
 				1440
 			],
 			[
-				3840,
-				2160
+				1920,
+				1080
+			],
+			[
+				1536,
+				864
+			],
+			[
+				1280,
+				720
 			]
 		],
 		"framerate_scalings": [

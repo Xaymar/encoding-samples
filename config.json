@@ -32,7 +32,7 @@
 		"h264_nvenc": {
 			"enabled": true,
 			"pool": "nvenc",
-			"parallel": 3,
+			"parallel": 2,
 			"gpu": -1,
 			"presets": [
 				"p5",
@@ -61,7 +61,7 @@
 		"hevc_nvenc": {
 			"enabled": false,
 			"pool": "nvenc",
-			"parallel": 3,
+			"parallel": 2,
 			"gpu": -1
 		},
 		"h264_amf": {

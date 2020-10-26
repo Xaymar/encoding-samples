@@ -198,7 +198,7 @@
 		},
 		"vmaf": {
 			"model": "vmaf_4k_rb_v0.6.2.pkl",
-			"threads": 0
+			"threads": 3
 		},
 		"resolutions": [
 			[

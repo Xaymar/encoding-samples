@@ -35,20 +35,15 @@
 			"parallel": 2,
 			"gpu": -1,
 			"presets": [
-				"p5",
-				"p6",
 				"p7"
 			],
 			"tunes": [
 				"hq"
 			],
 			"rc-lookahead": [
-				0,
-				16,
 				32
 			],
-			"bframes": [				
-				2,
+			"bframes": [
 				3
 			],
 			"bframe_reference_mode": [

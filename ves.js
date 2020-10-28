@@ -451,7 +451,7 @@ async function work(config, ff, videos, encoders) {
 
 						if (filter != "")
 							filter = `${filter};` // [temp:${idx}];[temp:${idx}]
-						filter = `${filter}[${idx}:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${video.resolution.width.toFixed(0)}:h=${video.resolution.height.toFixed(0)},colorspace=ispace=${config.options.transcode.color.matrix}:itrc=${config.options.transcode.color.trc}:iprimaries=${config.options.transcode.color.primaries}:irange=${config.options.transcode.color.range}:space=${video.color.matrix}:trc=${video.color.trc}:primaries=${video.color.primaries}:range=${video.color.range},format=pix_fmts=yuv444p,fps=fps=${video.framerate.toFixed(2)},[ref:${idx}]libvmaf=model_path=${vmaf_model}:log_fmt=json:log_path=${ff.consolify(file[1])}:enable_conf_interval=1:psnr=1:ssim=1:n_threads=${config.options.vmaf.threads.toFixed(0)}[main:${idx}]`
+						filter = `${filter}[${idx}:v:0]scale=flags=bicubic+full_chroma_inp+full_chroma_int:w=${video.resolution.width.toFixed(0)}:h=${video.resolution.height.toFixed(0)},colorspace=ispace=${config.options.transcode.color.matrix}:itrc=${config.options.transcode.color.trc}:iprimaries=${config.options.transcode.color.primaries}:irange=${config.options.transcode.color.range}:space=${video.color.matrix}:trc=${video.color.trc}:primaries=${video.color.primaries}:range=${video.color.range},format=pix_fmts=yuv444p,fps=fps=${video.framerate.toFixed(2)},${references[idx]}libvmaf=model_path=${vmaf_model}:log_fmt=json:log_path=${ff.consolify(file[1])}:enable_conf_interval=1:psnr=1:ssim=1:n_threads=${config.options.vmaf.threads.toFixed(0)}[main:${idx}]`
 					}
 
 					opts.push("-filter_complex", filter);

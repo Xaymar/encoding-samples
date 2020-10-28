@@ -382,6 +382,7 @@ async function work(config, ff, videos, encoders) {
 		console.time(video_key);
 		let video = videos.get(video_key);
 		for (let cache_key of video.caches.keys()) {
+			console.group(cache_key);
 			console.time(cache_key);
 			let cache = video.caches.get(cache_key);
 
@@ -477,6 +478,7 @@ async function work(config, ff, videos, encoders) {
 				console.groupEnd();
 				console.timeEnd(LABEL);
 			}
+			console.groupEnd(cache_key);
 			console.timeEnd(cache_key);
 		}
 		console.timeEnd(video_key);

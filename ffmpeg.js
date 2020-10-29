@@ -2,6 +2,7 @@ const path = require('path');
 const process = require('process');
 const child_process = require('child_process');
 const os = require('os');
+const fs = require('fs');
 
 function parse_duration(str) {
 	// Duration is in the form HH:MM:SS.fraction
@@ -14,13 +15,20 @@ function parse_duration(str) {
 
 class ffmpeg {
 	constructor(ffpath) {
-		// Figure out the location of FFmpeg
-		if (!ffpath)
-			ffpath = process.cwd();
-		this.bin = {
-			ffmpeg: path.join(ffpath, "bin/ffmpeg.exe"),
-			ffprobe: path.join(ffpath, "bin/ffprobe.exe")
-		};
+		this.bin = {};
+		this.bin.ffmpeg = "ffmpeg";
+		this.bin.ffprobe = "ffprobe";
+		if (os.platform() == "win32") { // Windows has special behavior - system installed FFmpeg is rare.
+			let ffmpeg_local = path.join((ffpath ? ffpath : process.cwd()), "bin/ffmpeg.exe");
+			if (fs.existsSync(ffmpeg_local)) {
+				this.bin.ffmpeg = ffmpeg_local;
+			}
+			
+			let ffprobe_local = path.join((ffpath ? ffpath : process.cwd()), "bin/ffprobe.exe");
+			if (fs.existsSync(ffmpeg_local)) {
+				this.bin.ffmpeg = ffprobe_local;
+			}
+		}
 	}
 
 	_probeParse(buffer) {

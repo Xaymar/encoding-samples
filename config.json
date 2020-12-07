@@ -41,10 +41,14 @@
 				"hq"
 			],
 			"rc-lookahead": [
-				32
+				32,
+				16,
+				0
 			],
 			"bframes": [
-				3
+				4,
+				3,
+				2
 			],
 			"bframe_reference_mode": [
 				"middle"
@@ -218,17 +222,16 @@
 			]
 		],
 		"framerate_scalings": [
-			1.0,
-			0.5
+			1.0
 		],
 		"bitrates": [
-			3500,
+			8000,
 			6000,
-			8000
+			3500
 		],
 		"keyframeinterval": [
-			1.0,
-			2.0
+			2.0,
+			1.0
 		]
 	}
 }
